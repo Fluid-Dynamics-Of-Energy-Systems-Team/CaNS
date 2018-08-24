@@ -60,8 +60,12 @@ program cans
   real(8), parameter, dimension(3) :: l   = (/lx,ly,lz/)
   real(8), parameter, dimension(3) :: dl  = (/dx,dy,dz/)
   real(8), parameter, dimension(3) :: dli = (/dxi,dyi,dzi/)
-  real(8), dimension(0:imax+1,0:jmax+1,0:ktot+1) :: u,v,w,p,up,vp,wp,pp
-  real(8), dimension(imax,jmax,ktot)    :: dudtrko,dvdtrko,dwdtrko
+  real(8), dimension(0:imax+1,0:jmax+1,0:ktot+1) :: p,pp
+  real(8), dimension(0:imax+1,0:jmax+1,0:ktot+1), managed :: u,v,w,up,vp,wp
+  !real(8), dimension(0:imax+1,0:jmax+1,0:ktot+1) :: u,v,w,p,up,vp,wp,pp
+  !real(8), dimension(imax,jmax,ktot)    :: dudtrko,dvdtrko,dwdtrko
+  real(8), dimension(imax,jmax,ktot), managed   :: dudtrko,dvdtrko,dwdtrko
+  integer :: i,j,k
   real(8), dimension(3) :: tauxo,tauyo,tauzo
   real(8), dimension(3) :: f
   type(C_PTR), dimension(2,2) :: arrplanp

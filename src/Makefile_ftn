@@ -1,13 +1,13 @@
 # fortran compiler
-FC   = /cfs/klemming/nobackup/t/tada/pgi/linux86-64/18.4/mpi/openmpi-2.1.2/bin/mpif90
+FC   = ftn
 #
 BIG := # -mcmodel=medium
 DBG := # -g -fbacktrace -Wall -O0 -Wextra -pedantic -fcheck=all
-OMP := #-openmp
+OMP := # -fopenmp
 OPT := -O3
 OTH := -DDEBUG -DTIMING #-DIMPDIFF
 PROF := #-pg
-FFLAGS := -cpp $(OPT) $(BIG) $(DBG) $(PROF) $(OMP) $(OTH) -Mcuda=cc3x -Minfo=accel # -v 
+FFLAGS := -cpp $(OPT) $(BIG) $(DBG) $(PROF) $(OMP) $(OTH) -dynamic
 
 #
 TARGET = cans
@@ -15,13 +15,12 @@ TARGET = cans
 OBJ = bound.o chkdiv.o chkdt.o common_mpi.o correc.o debug.o fft.o fftw.o fillps.o initflow.o initgrid.o initmpi.o initsolver.o load.o main.o mom.o momd.o moms.o output.o param.o rk.o sanity.o solver.o decomp_2d.o io.o
 #
 #LIBS = -lfftw3 -lfftw3_threads -llapack
-#LIBS = -lfftw3 -lfftw3_threads -L/opt/cray/libsci/13.0.1/GNU/49/haswell/lib #-lsci_gnu_49
-LIBS = -L/pdc/vol/fftw/3.3.4/gcc/8.4/openmpi/1.8/double/lib/ -I/pdc/vol/fftw/3.3.4/gcc/8.4/openmpi/1.8/double/include -lfftw3 -I/pdc/vol/fftw/3.3.4/gcc/8.4/threads/include -L/pdc/vol/fftw/3.3.4/gcc/8.4/threads/lib/ -lfftw3_threads -lblas -llapack
+LIBS = -lfftw3 -lfftw3_threads -L/opt/cray/libsci/13.0.1/GNU/49/haswell/lib -lsci_gnu_49
 #
 all: $(TARGET)
 #
 $(TARGET): $(OBJ)
-	$(FC) $(FFLAGS) $(OBJ) $(LIBS) -o $(TARGET)
+	$(FC) $(FFLAGS) $(OBJ) $(LIBS) -o $(TARGET) -dynamic
 #
 .PHONY: clean
 clean:
@@ -57,10 +56,8 @@ load.o: load.f90 common_mpi.o decomp_2d.o io.o
 	$(FC) $(FFLAGS) -c  load.f90 
 main.o: main.f90 bound.o chkdiv.o chkdt.o debug.o fft.o fillps.o initflow.o initflow.o initgrid.o initmpi.o initsolver.o load.o output.o param.o rk.o sanity.o solver.o out1d.h90 out2d.h90 out3d.h90
 	$(FC) $(FFLAGS) -c  main.f90
-#mom.o: mom.f90 common_mpi.o
-#	$(FC) $(FFLAGS) -c  mom.f90
-mom.o: mom.cuf common_mpi.o
-	$(FC) $(FFLAGS) -c  mom.cuf
+mom.o: mom.f90 common_mpi.o
+	$(FC) $(FFLAGS) -c  mom.f90
 momd.o: momd.f90 common_mpi.o
 	$(FC) $(FFLAGS) -c  momd.f90
 moms.o: moms.f90
@@ -69,10 +66,8 @@ output.o: output.f90 io.o
 	$(FC) $(FFLAGS) -c  output.f90
 param.o: param.f90 setup.h90 bc.h90
 	$(FC) $(FFLAGS) -c  param.f90
-#rk.o: rk.f90 debug.o mom.o momd.o moms.o param.o
-#	$(FC) $(FFLAGS) -c  rk.f90
-rk.o: rk.cuf debug.o mom.o momd.o moms.o param.o
-	$(FC) $(FFLAGS) -c  rk.cuf
+rk.o: rk.f90 debug.o mom.o momd.o moms.o param.o
+	$(FC) $(FFLAGS) -c  rk.f90
 sanity.o: sanity.f90 bound.o chkdiv.o common_mpi.o correc.o debug.o decomp_2d.o fft.o fillps.o initflow.o initmpi.o initsolver.o param.o solver.o
 	$(FC) $(FFLAGS) -c  sanity.f90
 solver.o: solver.f90 fft.o param.o
