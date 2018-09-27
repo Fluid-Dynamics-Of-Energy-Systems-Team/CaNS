@@ -7,16 +7,16 @@ OMP := #-openmp
 OPT := -O3
 OTH := -DDEBUG -DTIMING #-DIMPDIFF
 PROF := #-pg
-FFLAGS := -cpp $(OPT) $(BIG) $(DBG) $(PROF) $(OMP) $(OTH) -Mcuda=cc3x -Minfo=accel # -v 
+FFLAGS := -cpp $(OPT) $(BIG) $(DBG) $(PROF) $(OMP) $(OTH) -Mcuda=cc3x -Minfo=all -Mneginfo=all -gopt # -v 
 
 #
 TARGET = cans
 #
-OBJ = bound.o chkdiv.o chkdt.o common_mpi.o correc.o debug.o fft.o fftw.o fillps.o initflow.o initgrid.o initmpi.o initsolver.o load.o main.o mom.o momd.o moms.o output.o param.o rk.o sanity.o solver.o decomp_2d.o io.o
+OBJ = bound.o chkdiv.o chkdt.o common_mpi.o common_cuda.o correc.o debug.o fft.o fftw.o fillps.o initflow.o initgrid.o initmpi.o initsolver.o load.o main.o mom.o momd.o moms.o output.o param.o rk.o sanity.o solver.o decomp_2d.o io.o
 #
 #LIBS = -lfftw3 -lfftw3_threads -llapack
 #LIBS = -lfftw3 -lfftw3_threads -L/opt/cray/libsci/13.0.1/GNU/49/haswell/lib #-lsci_gnu_49
-LIBS = -L/pdc/vol/fftw/3.3.4/gcc/8.4/openmpi/1.8/double/lib/ -I/pdc/vol/fftw/3.3.4/gcc/8.4/openmpi/1.8/double/include -lfftw3 -I/pdc/vol/fftw/3.3.4/gcc/8.4/threads/include -L/pdc/vol/fftw/3.3.4/gcc/8.4/threads/lib/ -lfftw3_threads -lblas -llapack
+LIBS = -L/pdc/vol/fftw/3.3.4/gcc/8.4/openmpi/1.8/double/lib/ -I/pdc/vol/fftw/3.3.4/gcc/8.4/openmpi/1.8/double/include -lfftw3 -I/pdc/vol/fftw/3.3.4/gcc/8.4/threads/include -L/pdc/vol/fftw/3.3.4/gcc/8.4/threads/lib/ -lfftw3_threads -lblas -llapack #-L/pdc/vol/cuda/cuda-8.0/lib64/ -lnvToolsExt
 #
 all: $(TARGET)
 #
@@ -35,6 +35,8 @@ chkdt.o: chkdt.f90 common_mpi.o
 	$(FC) $(FFLAGS) -c  chkdt.f90 
 common_mpi.o: common_mpi.f90 param.o
 	$(FC) $(FFLAGS) -c  common_mpi.f90 
+common_cuda.o: common_cuda.cuf 
+	$(FC) $(FFLAGS) -c  common_cuda.cuf
 correc.o: correc.f90
 	$(FC) $(FFLAGS) -c  correc.f90 
 debug.o: debug.f90 common_mpi.o
@@ -72,7 +74,7 @@ param.o: param.f90 setup.h90 bc.h90
 #rk.o: rk.f90 debug.o mom.o momd.o moms.o param.o
 #	$(FC) $(FFLAGS) -c  rk.f90
 rk.o: rk.cuf debug.o mom.o momd.o moms.o param.o
-	$(FC) $(FFLAGS) -c  rk.cuf
+	$(FC) $(FFLAGS) -lnvToolsExt -c  rk.cuf
 sanity.o: sanity.f90 bound.o chkdiv.o common_mpi.o correc.o debug.o decomp_2d.o fft.o fillps.o initflow.o initmpi.o initsolver.o param.o solver.o
 	$(FC) $(FFLAGS) -c  sanity.f90
 solver.o: solver.f90 fft.o param.o

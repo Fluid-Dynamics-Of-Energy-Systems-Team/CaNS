@@ -1,5 +1,5 @@
    ! total number of points in x, y and z
-   integer, parameter :: itot = 64, jtot = 64, ktot = 64
+   integer, parameter :: itot = 32, jtot = 32, ktot = 32
    ! domain length in x, y and z
    real(8), parameter :: lx =3.d0, ly = 1.5d0, lz = 1.d0
    real(8), parameter :: dx = lx/(1.d0*itot), & ! grid parameters
@@ -25,7 +25,7 @@
    !      = 'hcp' --> half channel with poiseuille profile  (u->streamwise velocity in x dir)
    character(len=3), parameter :: inivel = 'log'
    !
-   integer, parameter :: nstep = 100000 ! number of time steps
+   integer, parameter :: nstep = 10 ! number of time steps
    logical, parameter :: restart = .false. ! restart or not from a checkpoint
    !
    ! -> every *icheck* time steps compute the new time step size dt
@@ -41,11 +41,11 @@
    ! main.f90 or even output.f90 accordingly. Currently these assume the z to be
    ! an inhomogeneous direction.
    !
-   integer, parameter :: icheck =    1, iout0d =    10, iout1d =   20, &
-                         iout2d = 5000, iout3d = 10000, isave  = 2000
+   integer, parameter :: icheck =    10, iout0d =    10, iout1d =   10, &
+                         iout2d = 10, iout3d = 10, isave  = 10
    !
    ! grid of computational subdomains
-   integer, parameter, dimension(2) :: dims = (/2,2/)
+   integer, parameter, dimension(2) :: dims = (/2,4/)
    ! x and y sizes of local arrays in the basic 2D z-pencil decomposition
    integer, parameter :: imax = itot/dims(1), jmax = jtot/dims(2)
    !

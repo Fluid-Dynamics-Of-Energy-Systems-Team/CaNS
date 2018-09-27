@@ -53,6 +53,9 @@ program cans
                              is_outflow,no_outflow,is_forced
   use mod_sanity     , only: test_sanity
   use mod_solver     , only: solver
+  use cudafor
+  use mod_common_cuda, only: istat, pinnedFlag, stream3, stream4, stream5
+ 
   !$ use omp_lib
   implicit none
   integer, parameter, dimension(3) :: ng = (/itot,jtot,ktot/)
@@ -61,10 +64,13 @@ program cans
   real(8), parameter, dimension(3) :: dl  = (/dx,dy,dz/)
   real(8), parameter, dimension(3) :: dli = (/dxi,dyi,dzi/)
   real(8), dimension(0:imax+1,0:jmax+1,0:ktot+1) :: p,pp
-  real(8), dimension(0:imax+1,0:jmax+1,0:ktot+1), managed :: u,v,w,up,vp,wp
+  !real(8), dimension(0:imax+1,0:jmax+1,0:ktot+1) :: u,v,w,
+  real(8), dimension(0:imax+1,0:jmax+1,0:ktot+1) :: up,vp,wp
+  real(8), allocatable :: u(:,:,:), v(:,:,:), w(:,:,:)
+  real(8), device, dimension(0:imax+1,0:jmax+1,0:ktot+1) :: u_d, v_d, w_d
   !real(8), dimension(0:imax+1,0:jmax+1,0:ktot+1) :: u,v,w,p,up,vp,wp,pp
   !real(8), dimension(imax,jmax,ktot)    :: dudtrko,dvdtrko,dwdtrko
-  real(8), dimension(imax,jmax,ktot), managed   :: dudtrko,dvdtrko,dwdtrko
+  real(8), dimension(imax,jmax,ktot)   :: dudtrko,dvdtrko,dwdtrko
   integer :: i,j,k
   real(8), dimension(3) :: tauxo,tauyo,tauzo
   real(8), dimension(3) :: f
@@ -90,7 +96,8 @@ program cans
   real(8) :: ristep
   real(8) :: dt,dti,dtmax,time,dtrk,dtrki,divtot,divmax
   integer :: irk,istep
-  real(8), dimension(0:ktot+1) :: dzc,dzf,zc,zf,dzci,dzfi
+  real(8), dimension(0:ktot+1) :: dzc,dzf,zc,zf
+  real(8), dimension(0:ktot+1) :: dzci,dzfi
   real(8) :: meanvel
   real(8), dimension(3) :: dpdl
   !real(8), allocatable, dimension(:) :: var
@@ -101,6 +108,42 @@ program cans
   character(len=7) :: fldnum
   integer :: lenr,kk
   logical :: kill
+
+  integer :: size_uvw
+
+ ! Init pinned arrays
+ ! allocate(u(0:imax+1,0:jmax+1,0:ktot+1), STAT=istat, PINNED=pinnedFlag)
+  allocate(u(0:imax+1,0:jmax+1,0:ktot+1))
+
+  if (istat /= 0) then
+     print *, 'Allocation of u failed'
+     stop
+  end if 
+ if (.not. pinnedFlag) then 
+    print *, 'Pinned allocation of u failed'
+ else 
+    print *, 'Pinned successful'
+ end if
+ 
+  !allocate(v(0:imax+1,0:jmax+1,0:ktot+1), STAT=istat, PINNED=pinnedFlag)
+  !allocate(w(0:imax+1,0:jmax+1,0:ktot+1), STAT=istat, PINNED=pinnedFlag)
+  allocate(v(0:imax+1,0:jmax+1,0:ktot+1))
+  allocate(w(0:imax+1,0:jmax+1,0:ktot+1))  
+
+  istat = cudaStreamCreate(stream3)
+  istat = cudaStreamCreate(stream4)
+  istat = cudaStreamCreate(stream5)
+  size_uvw = (imax+1) * (jmax+1) * (ktot+1) * 8
+  print *, 'SIZE', size_uvw
+  !istat = cudaMemcpyAsync(u(0,0,0), u_d(0,0,0), size_uvw, cudaMemcpyHostToDevice, stream3)
+  !istat = cudaMemcpyAsync(v(0,0,0), v_d(0,0,0), size_uvw, cudaMemcpyHostToDevice, stream4)
+  !istat = cudaMemcpyAsync(w(0,0,0), w_d(0,0,0), size_uvw, cudaMemcpyHostToDevice, stream5)
+  !istat = cudaDeviceSynchronize()
+ 
+  u_d = u
+  v_d = v
+  w_d = w
+
   !
   !$call omp_set_num_threads(nthreadsmax)
   call initmpi(ng,cbcpre)
