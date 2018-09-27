@@ -1,7 +1,7 @@
    ! total number of points in x, y and z
    integer, parameter :: itot = 32, jtot = 32, ktot = 32
    ! domain length in x, y and z
-   real(8), parameter :: lx =3.d0, ly = 1.5d0, lz = 1.d0
+   real(8), parameter :: lx = 3.d0, ly = 1.5d0, lz = 1.d0
    real(8), parameter :: dx = lx/(1.d0*itot), & ! grid parameters
                          dy = ly/(1.d0*jtot), &
                          dz = lz/(1.d0*ktot), &
