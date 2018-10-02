@@ -1,0 +1,13 @@
+module mod_common_cuda
+  use cudafor 
+  implicit none
+  integer(kind=cuda_stream_kind) :: stream1 
+  integer(kind=cuda_stream_kind) :: stream2 
+  integer(kind=cuda_stream_kind) :: stream3   
+  integer(kind=cuda_stream_kind) :: stream4   
+  integer(kind=cuda_stream_kind) :: stream5   
+  integer(kind=cuda_stream_kind) :: stream6
+  integer :: istat 
+  logical :: pinnedFlag
+end module mod_common_cuda
+

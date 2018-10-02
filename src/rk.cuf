@@ -5,7 +5,7 @@ module mod_rk
   use mod_momd , only: momxpd,momypd,momzpd,momxa,momya,momza
   use mod_moms , only: momsad
   use cudafor
-  use mod_common_cuda, only: stream3, stream4, stream5
+  use mod_common_cuda, only: stream1, stream2, stream3, stream4, stream5, stream6
   implicit none
   private
   public rk,rk_id
@@ -26,7 +26,7 @@ module mod_rk
     real(8), dimension(0:ktot+1), device :: dzflzi_d
     real(8), intent(in   ), dimension(0:) :: dzclzi
     real(8), intent(in   ), dimension(0:,0:,0:) :: p
-    real(8), intent(in), allocatable :: u(:,:,:), v(:,:,:), w(:,:,:)
+    real(8), intent(in), dimension(0:imax+1,0:jmax+1,0:ktot+1) :: u, v, w
     real(8), device, dimension(0:imax+1,0:jmax+1,0:ktot+1) :: u_d, v_d, w_d 
     real(8), intent(inout), dimension(:,:,:) :: dudtrko,dvdtrko,dwdtrko
     real(8), dimension(imax,jmax,ktot), device :: dudtrko_d,dvdtrko_d,dwdtrko_d 
@@ -51,32 +51,29 @@ module mod_rk
     factor12 = factor1 + factor2
     !
     
-    !istat = cudaStreamCreate(stream3)
-    !istat = cudaStreamCreate(stream4)
-    !istat = cudaStreamCreate(stream5)
-    !size_uvw = (imax+1) * (jmax+1) * (ktot+1) * 8
+    size_uvw = (imax) * (jmax) * (ktot)
+    
     u_d = u
-    !istat = cudaMemcpyAsync(u,u_d,size_uvw, stream3)
     v_d = v
-    !istat = cudaMemcpyAsync(v,v_d,size_uvw, stream4)
     w_d = w
-    !istat = cudaMemcpyAsync(w,w_d,size_uvw, stream5)
 
     dzci_d = dzci
-    dzfi_d = dzfi
+    dzfi_d = dzfi    
     dzflzi_d =  dzflzi
-
+    
+    ! async
     dudtrko_d = dudtrko
-    dvdtrko_d =	dvdtrko
-    dwdtrko_d =	dwdtrko 
-
+    dvdtrko_d = dvdtrko
+    dwdtrko_d = dwdtrko
+    
     call momxp(n(1),n(2),n(3),dli(1),p,dudtrk)
     dudtrk_d  = dudtrk
     call momyp(n(1),n(2),n(3),dli(2),p,dvdtrk)
     dvdtrk_d = dvdtrk
     call momzp(n(1),n(2),n(3),dzci  ,p,dwdtrk)
     dwdtrk_d = dwdtrk
-   
+
+    ! async dudtrko
     !print *, 'BEFORE Cuf Kernel'
     !acc data copyin(u(0:imax+1,0:jmax+1,0:ktot+1),v(0:imax+1,0:jmax+1,0:ktot+1),w(0:imax+1,0:jmax+1,0:ktot+1),dudtrk(imax,jmax,ktot), dvdtrk(imax,jmax,ktot), dwdtrk(imax,jmax,ktot))   
     !$cuf kernel do(3) <<<*,*>>>
@@ -92,9 +89,9 @@ module mod_rk
     !end acc data
     !print *, 'AFTER Cuf Kernel'
 
-    !up = up_d
-    !vp = vp_d 
-    !wp = wp_d
+    up = up_d
+    vp = vp_d 
+    wp = wp_d
 
     call momxad(n(1),n(2),n(3),dli(1),dli(2),dli(3),dzci_d,dzfi_d,dzflzi_d,visc,u_d,v_d,w_d,dudtrk_d,taux)
     call momyad(n(1),n(2),n(3),dli(1),dli(2),dli(3),dzci_d,dzfi_d,dzflzi_d,visc,u_d,v_d,w_d,dvdtrk_d,tauy)
@@ -107,6 +104,10 @@ module mod_rk
     tauyo(:) = tauy(:)
     tauzo(:) = tauz(:)
     
+    istat = cudaStreamSynchronize(stream1)
+    istat = cudaStreamSynchronize(stream3)
+    istat = cudaStreamSynchronize(stream5)
+    
     !OMP PARALLEL DO DEFAULT(none) &
     !OMP PRIVATE(i,j,k) &
     !OMP SHARED(n,factor1,factor2,up,vp,wp,dudtrk,dvdtrk,dwdtrk,dudtrko,dvdtrko,dwdtrko)
@@ -118,20 +119,21 @@ module mod_rk
           up_d(i,j,k) = up_d(i,j,k) + factor1*dudtrk_d(i,j,k) + factor2*dudtrko_d(i,j,k)
           vp_d(i,j,k) = vp_d(i,j,k) + factor1*dvdtrk_d(i,j,k) + factor2*dvdtrko_d(i,j,k)
           wp_d(i,j,k) = wp_d(i,j,k) + factor1*dwdtrk_d(i,j,k) + factor2*dwdtrko_d(i,j,k)
-          !dudtrk_d(i,j,k) = dudtrk(i,j,k)
-          !dvdtrk_d(i,j,k) = dvdtrk(i,j,k)
-          !dwdtrk_d(i,j,k) = dwdtrk(i,j,k)
         enddo
       enddo
     enddo
     !OMP END PARALLEL DO
-    istat = cudaDeviceSynchronize()
     
-    ! TODO, move before kernel
+    istat = cudaStreamSynchronize(stream1)
+    istat = cudaStreamSynchronize(stream3)
+    istat = cudaStreamSynchronize(stream5)
+ 
+   ! TODO, move before kernel, async
     dudtrko = dudtrk_d
     dvdtrko = dvdtrk_d  
     dwdtrko = dwdtrk_d
     
+   ! async?
     up = up_d
     vp = vp_d
     wp = wp_d

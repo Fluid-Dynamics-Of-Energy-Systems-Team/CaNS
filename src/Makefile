@@ -7,7 +7,7 @@ OMP := #-openmp
 OPT := -O3
 OTH := -DDEBUG -DTIMING #-DIMPDIFF
 PROF := #-pg
-FFLAGS := -cpp $(OPT) $(BIG) $(DBG) $(PROF) $(OMP) $(OTH) -Mcuda=cc3x -Minfo=all -Mneginfo=all -gopt # -v 
+FFLAGS := -cpp $(OPT) $(BIG) $(DBG) $(PROF) $(OMP) $(OTH) -Mcuda=lineinfo -Mcuda=cc3x -Minfo=all -Mneginfo=all -gopt # -v 
 
 #
 TARGET = cans
@@ -21,7 +21,7 @@ LIBS = -L/pdc/vol/fftw/3.3.4/gcc/8.4/openmpi/1.8/double/lib/ -I/pdc/vol/fftw/3.3
 all: $(TARGET)
 #
 $(TARGET): $(OBJ)
-	$(FC) $(OPT) $(OBJ) $(LIBS) -o $(TARGET)
+	$(FC) $(FFLAGS) $(OPT) $(OBJ) $(LIBS) -o $(TARGET)
 #
 .PHONY: clean
 clean:
