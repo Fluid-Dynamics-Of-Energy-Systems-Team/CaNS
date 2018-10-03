@@ -7,7 +7,9 @@ OMP := #-openmp
 OPT := -O3
 OTH := -DDEBUG -DTIMING #-DIMPDIFF
 PROF := #-pg
-FFLAGS := -cpp $(OPT) $(BIG) $(DBG) $(PROF) $(OMP) $(OTH) -Mcuda=lineinfo -Mcuda=cc3x -Minfo=all -Mneginfo=all -gopt # -v 
+CUF := -Mcuda=cc3x -Minfo=all -Mneginfo=all #cuda 
+DEB := -Mcuda=lineinfo -gopt #debugging
+FFLAGS := -cpp $(OPT) $(BIG) $(DBG) $(PROF) $(OMP) $(OTH) $(CUF) $(DEB) # -v 
 
 #
 TARGET = cans
@@ -15,13 +17,13 @@ TARGET = cans
 OBJ = bound.o chkdiv.o chkdt.o common_mpi.o common_cuda.o correc.o debug.o fft.o fftw.o fillps.o initflow.o initgrid.o initmpi.o initsolver.o load.o main.o mom.o momd.o moms.o output.o param.o rk.o sanity.o solver.o decomp_2d.o io.o
 #
 #LIBS = -lfftw3 -lfftw3_threads
-#LIBS = -lfftw3 -lfftw3_threads -L/opt/cray/libsci/13.0.1/GNU/49/haswell/lib #-lsci_gnu_49
-LIBS = -L/pdc/vol/fftw/3.3.4/gcc/8.4/openmpi/1.8/double/lib/ -I/pdc/vol/fftw/3.3.4/gcc/8.4/openmpi/1.8/double/include -lfftw3 -I/pdc/vol/fftw/3.3.4/gcc/8.4/threads/include -L/pdc/vol/fftw/3.3.4/gcc/8.4/threads/lib/ -lfftw3_threads -lblas -llapack #-L/pdc/vol/cuda/cuda-8.0/lib64/ -lnvToolsExt
+#LIBS = -lfftw3 -lfftw3_threads -L/opt/cray/libsci/13.0.1/GNU/49/haswell/lib #-lsci_gnu_49, tegner, lapack 
+LIBS = -L/pdc/vol/fftw/3.3.4/gcc/8.4/openmpi/1.8/double/lib/ -I/pdc/vol/fftw/3.3.4/gcc/8.4/openmpi/1.8/double/include -lfftw3 -I/pdc/vol/fftw/3.3.4/gcc/8.4/threads/include -L/pdc/vol/fftw/3.3.4/gcc/8.4/threads/lib/ -lfftw3_threads -lblas -llapack #-L/pdc/vol/cuda/cuda-8.0/lib64/ -lnvToolsExt ! dependencies ,NVTX tools 
 #
 all: $(TARGET)
 #
 $(TARGET): $(OBJ)
-	$(FC) $(FFLAGS) $(OPT) $(OBJ) $(LIBS) -o $(TARGET)
+	$(FC) $(OPT) $(OBJ) $(LIBS) -o $(TARGET) -Mcuda=cc3x
 #
 .PHONY: clean
 clean:

@@ -65,7 +65,8 @@ program cans
   real(8), parameter, dimension(3) :: dli = (/dxi,dyi,dzi/)
   real(8), device, dimension(0:imax+1,0:jmax+1,0:ktot+1) :: u_d, v_d, w_d
   real(8), dimension(0:imax+1,0:jmax+1,0:ktot+1) :: u,v,w,p,up,vp,wp,pp
-  real(8), dimension(imax,jmax,ktot)   :: dudtrko,dvdtrko,dwdtrko
+  !real(8), dimension(imax,jmax,ktot)   :: dudtrko,dvdtrko,dwdtrko
+  real(8), allocatable, pinned   :: dudtrko(:,:,:),dvdtrko(:,:,:),dwdtrko(:,:,:)
   integer :: i,j,k
   real(8), dimension(3) :: tauxo,tauyo,tauzo
   real(8), dimension(3) :: f
@@ -103,6 +104,45 @@ program cans
   character(len=7) :: fldnum
   integer :: lenr,kk
   logical :: kill
+
+  istat = cudaDeviceReset()
+   ! Init pinned arrays dudtrko,dvdtrko,dwdtrko
+
+!  allocate(dvdtrko(imax,jmax,ktot))
+  allocate(dudtrko(imax,jmax,ktot), STAT=istat, PINNED=pinnedFlag)
+  if (istat /= 0) then
+     print *, 'Allocation of dudtrko failed'
+     stop
+  end if
+  if (.not. pinnedFlag) then
+    !print *, 'Pinned allocation of dudtrko failed'
+  else
+    !print *, 'Pinned successful dudtrko'
+  end if
+  
+  allocate(dvdtrko(imax,jmax,ktot))
+  !allocate(dvdtrko(imax,jmax,ktot), STAT=istat, PINNED=pinnedFlag)
+  if (istat /= 0) then
+     print *, 'Allocation of dvdtrko failed'
+     stop
+  end if
+  if (.not. pinnedFlag) then
+    !print *, 'Pinned allocation of dvdtrko failed'
+  else
+    !print *, 'Pinned successful dvdtrko'
+  end if
+
+  allocate(dwdtrko(imax,jmax,ktot))
+  !allocate(dwdtrko(imax,jmax,ktot), STAT=istat, PINNED=pinnedFlag)
+  if (istat /= 0) then
+     print *, 'Allocation of dwdtrko failed'
+     stop
+  end if
+  if (.not. pinnedFlag) then
+    !print *, 'Pinned allocation of dwdtrko failed'
+  else
+    !print *, 'Pinned successful dwdtrko'
+  end if
 
   istat = cudaStreamCreate(stream1)
   istat = cudaStreamCreate(stream2)
@@ -346,6 +386,11 @@ program cans
   call fftend(arrplanv)
   call fftend(arrplanw)
 #endif
+
+  deallocate(dudtrko)
+  deallocate(dvdtrko)
+  deallocate(dwdtrko)
+  
   if(myid.eq.0.and.(.not.kill)) print*, '*** Fim ***'
   call decomp_2d_finalize
   call MPI_FINALIZE(ierr)

@@ -28,7 +28,8 @@ module mod_rk
     real(8), intent(in   ), dimension(0:,0:,0:) :: p
     real(8), intent(in), dimension(0:imax+1,0:jmax+1,0:ktot+1) :: u, v, w
     real(8), device, dimension(0:imax+1,0:jmax+1,0:ktot+1) :: u_d, v_d, w_d 
-    real(8), intent(inout), dimension(:,:,:) :: dudtrko,dvdtrko,dwdtrko
+    !real(8), intent(inout), dimension(:,:,:) :: dudtrko,dvdtrko,dwdtrko
+    real(8), intent(inout), dimension(:,:,:), pinned :: dudtrko,dvdtrko,dwdtrko
     real(8), dimension(imax,jmax,ktot), device :: dudtrko_d,dvdtrko_d,dwdtrko_d 
     real(8), intent(inout), dimension(3) :: tauxo,tauyo,tauzo
     real(8), intent(out), dimension(0:imax+1,0:jmax+1,0:ktot+1) :: up,vp,wp
@@ -52,7 +53,7 @@ module mod_rk
     !
     
     size_uvw = (imax) * (jmax) * (ktot)
-    
+
     u_d = u
     v_d = v
     w_d = w
@@ -62,9 +63,9 @@ module mod_rk
     dzflzi_d =  dzflzi
     
     ! async
-    dudtrko_d = dudtrko
-    dvdtrko_d = dvdtrko
-    dwdtrko_d = dwdtrko
+    !dudtrko_d = dudtrko
+    !dvdtrko_d = dvdtrko
+    !dwdtrko_d = dwdtrko
     
     call momxp(n(1),n(2),n(3),dli(1),p,dudtrk)
     dudtrk_d  = dudtrk
@@ -93,8 +94,11 @@ module mod_rk
     vp = vp_d 
     wp = wp_d
 
+    istat = cudaMemcpyAsync(dudtrko_d,dudtrko,size_uvw, stream3)
     call momxad(n(1),n(2),n(3),dli(1),dli(2),dli(3),dzci_d,dzfi_d,dzflzi_d,visc,u_d,v_d,w_d,dudtrk_d,taux)
+    istat = cudaMemcpyAsync(dvdtrko_d,dvdtrko,size_uvw, stream5)
     call momyad(n(1),n(2),n(3),dli(1),dli(2),dli(3),dzci_d,dzfi_d,dzflzi_d,visc,u_d,v_d,w_d,dvdtrk_d,tauy)
+    istat = cudaMemcpyAsync(dwdtrko_d,dwdtrko,size_uvw, stream1)
     call momzad(n(1),n(2),n(3),dli(1),dli(2),dli(3),dzci_d,dzfi_d,dzflzi_d,visc,u_d,v_d,w_d,dwdtrk_d,tauz)
 
     f(1) = (factor1*sum(taux(:)/l(:)) + factor2*sum(tauxo(:)/l(:)))
@@ -122,13 +126,8 @@ module mod_rk
         enddo
       enddo
     enddo
-    !OMP END PARALLEL DO
-    
-    istat = cudaStreamSynchronize(stream1)
-    istat = cudaStreamSynchronize(stream3)
-    istat = cudaStreamSynchronize(stream5)
- 
-   ! TODO, move before kernel, async
+
+   ! TODO,  async
     dudtrko = dudtrk_d
     dvdtrko = dvdtrk_d  
     dwdtrko = dwdtrk_d
