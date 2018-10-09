@@ -66,6 +66,7 @@ program cans
   real(8), device, dimension(0:imax+1,0:jmax+1,0:ktot+1) :: u_d, v_d, w_d
   real(8), dimension(0:imax+1,0:jmax+1,0:ktot+1) :: u,v,w,p,up,vp,wp,pp
   !real(8), dimension(imax,jmax,ktot)   :: dudtrko,dvdtrko,dwdtrko
+  ! Pinned memory arrays declaration
   real(8), allocatable, pinned   :: dudtrko(:,:,:),dvdtrko(:,:,:),dwdtrko(:,:,:)
   integer :: i,j,k
   real(8), dimension(3) :: tauxo,tauyo,tauzo
@@ -105,10 +106,9 @@ program cans
   integer :: lenr,kk
   logical :: kill
 
-  istat = cudaDeviceReset()
    ! Init pinned arrays dudtrko,dvdtrko,dwdtrko
 
-!  allocate(dvdtrko(imax,jmax,ktot))
+  !allocate(dvdtrko(imax,jmax,ktot))
   allocate(dudtrko(imax,jmax,ktot), STAT=istat, PINNED=pinnedFlag)
   if (istat /= 0) then
      print *, 'Allocation of dudtrko failed'
@@ -120,8 +120,8 @@ program cans
     !print *, 'Pinned successful dudtrko'
   end if
   
-  allocate(dvdtrko(imax,jmax,ktot))
-  !allocate(dvdtrko(imax,jmax,ktot), STAT=istat, PINNED=pinnedFlag)
+  !allocate(dvdtrko(imax,jmax,ktot))
+  allocate(dvdtrko(imax,jmax,ktot), STAT=istat, PINNED=pinnedFlag)
   if (istat /= 0) then
      print *, 'Allocation of dvdtrko failed'
      stop
@@ -132,8 +132,8 @@ program cans
     !print *, 'Pinned successful dvdtrko'
   end if
 
-  allocate(dwdtrko(imax,jmax,ktot))
-  !allocate(dwdtrko(imax,jmax,ktot), STAT=istat, PINNED=pinnedFlag)
+  !allocate(dwdtrko(imax,jmax,ktot))
+  allocate(dwdtrko(imax,jmax,ktot), STAT=istat, PINNED=pinnedFlag)
   if (istat /= 0) then
      print *, 'Allocation of dwdtrko failed'
      stop
@@ -144,6 +144,7 @@ program cans
     !print *, 'Pinned successful dwdtrko'
   end if
 
+  ! Create non-default streams for overlap 
   istat = cudaStreamCreate(stream1)
   istat = cudaStreamCreate(stream2)
   istat = cudaStreamCreate(stream3)
@@ -387,9 +388,12 @@ program cans
   call fftend(arrplanw)
 #endif
 
+  ! Deallocate pinned memory arrays
   deallocate(dudtrko)
   deallocate(dvdtrko)
   deallocate(dwdtrko)
+  ! Reset device
+  istat = cudaDeviceReset()
   
   if(myid.eq.0.and.(.not.kill)) print*, '*** Fim ***'
   call decomp_2d_finalize

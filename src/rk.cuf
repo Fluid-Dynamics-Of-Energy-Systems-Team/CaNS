@@ -62,7 +62,7 @@ module mod_rk
     dzfi_d = dzfi    
     dzflzi_d =  dzflzi
     
-    ! async
+    ! synchronous version
     !dudtrko_d = dudtrko
     !dvdtrko_d = dvdtrko
     !dwdtrko_d = dwdtrko
@@ -94,6 +94,7 @@ module mod_rk
     vp = vp_d 
     wp = wp_d
 
+    ! Asynchronous memory transfer overlap with kernel execution
     istat = cudaMemcpyAsync(dudtrko_d,dudtrko,size_uvw, stream3)
     call momxad(n(1),n(2),n(3),dli(1),dli(2),dli(3),dzci_d,dzfi_d,dzflzi_d,visc,u_d,v_d,w_d,dudtrk_d,taux)
     istat = cudaMemcpyAsync(dvdtrko_d,dvdtrko,size_uvw, stream5)
@@ -108,6 +109,7 @@ module mod_rk
     tauyo(:) = tauy(:)
     tauzo(:) = tauz(:)
     
+    ! Synchronize with the kernels in the mom routines (dudtrk_d, dvdtrk_d, dwdtrk_d) 
     istat = cudaStreamSynchronize(stream1)
     istat = cudaStreamSynchronize(stream3)
     istat = cudaStreamSynchronize(stream5)
@@ -132,7 +134,6 @@ module mod_rk
     dvdtrko = dvdtrk_d  
     dwdtrko = dwdtrk_d
     
-   ! async?
     up = up_d
     vp = vp_d
     wp = wp_d
